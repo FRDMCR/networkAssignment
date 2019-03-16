@@ -12,10 +12,21 @@ def run_server(port=4000):
 
         conn, addr = s.accept()
         msg = conn.recv(1024)
-        print(msg.decode())     ## msg is a binary data, so we need to decode it
+        
+        rMsg = reverseMsg(msg.decode()) ## msg is a binary data, so we need to decode it
+        print(rMsg)
 
-        conn.sendall(msg)
+        conn.sendall(rMsg.encode())
         conn.close()
+
+## 입력한 문자열을 반대로 뒤집어 주는 함수
+def reverseMsg(str):
+    size = len(str)
+    reverseStr=''
+    for i in range(size-1, -1, -1):
+        reverseStr+=str[i]
+    
+    return reverseStr
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Echo server -p port")
