@@ -47,11 +47,9 @@ def getFileSize(fileName, directory):
 def getFileData(fileName, directory):
         with open(directory+"\\"+fileName, 'r', encoding="UTF-8") as f:
             data = ""
-            buffer = f.read(1024)
-            while buffer != "":
-                    data += buffer
-                    buffer = f.read(1024)
-                
+            ## 파일이 매번 각 라인을 읽어 리턴할 수 있기 때문에 라인마다 끊어서 저장
+            for line in f:
+                data += line
         return data
 
 if __name__ == '__main__':

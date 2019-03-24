@@ -15,6 +15,7 @@ def run(host, port, fileName):
         s.connect((host, port))
         s.sendall(fileName.encode())
 
+        ## reSize = 파일 사이즈
         reSize = s.recv(1024)
         reSize = reSize.decode()
         
@@ -28,10 +29,10 @@ def run(host, port, fileName):
         s.sendall(msg.encode())
 
         with open(fileName, 'w', encoding="UTF-8") as f:
-            data = s.recv(500)
-            while data:
-                f.write(data.decode())
-                data = s.recv(500)
+            ## 파일 사이즈만큼 recv
+            data = s.recv(int(reSize))
+            f.write(data.decode())
+
 
         print("file name : "+fileName)
         print("size : "+reSize)
