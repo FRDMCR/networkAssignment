@@ -82,12 +82,16 @@ def sniffing(nic):
 		        for item in ethernet_header.items():
 			        print('[{0}] : [{1}]'.format(item[0], item[1]))
 
-		        ip_size = int(data[ETH_SIZE] >> 4) * 4      # HL * 4 (byte)
+                print("")
+
+		        ip_size = int(data[ETH_SIZE] >> 4) * 5      # HL * 5 (byte)
 		        ip_header = make_ip_header(data[ETH_SIZE:ETH_SIZE+ip_size])
                 print("IP Header")
-		        for item in ethernet_header.items():
+		        for item in ip_header.items():
 			        print('[{0}] : [{1}]'.format(item[0], item[1]))
 
+                print("")
+                
 		    print("Raw Data")
 		    dumpcode(data)
 
