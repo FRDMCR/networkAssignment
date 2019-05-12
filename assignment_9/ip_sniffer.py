@@ -8,24 +8,28 @@ ETH_SIZE = 14
 
 def make_ethernet_header(raw_data):
 	ether = struct.unpack('!6B6BH', raw_data)
-	return {'dst':'%02x:%02x:%02x:%02x:%02x:%02x' % ether[:6],
-	'src':'%02x:%02x:%02x:%02x:%02x:%02x' % ether[6:12],
-	'ether_type':ether[12]}
+	# check IP packet
+    if ether[12]  == 2048 :
+        return {'dst':'%02x:%02x:%02x:%02x:%02x:%02x' % ether[:6],
+	    'src':'%02x:%02x:%02x:%02x:%02x:%02x' % ether[6:12],
+	    'ether_type':ether[12]}
+    else :
+        return 0
 
 def make_ip_header(raw_data) :
-	ip = struct.unpack('!BBHHHBBH4B4B', raw_data)
-	return {'version':str(ip[0])[0],
-	'header_length':str(ip[0])[1],
+	ip = struct.unpack('!BBHHHBBH4B4B', raw_data[:20])  # exclude option 
+	return {'version':str(ip[0])[0],    # version 4bits
+	'header_length':str(ip[0])[1],  # HL 4bits
 	'tos':ip[1],
 	'total_length':ip[2],
 	'id':ip[3],
-	'flag':ip[4],
-	'offset':ip[5],
-	'ttl':ip[6],
-	'protocol':ip[7],
-	'checksum':ip[8],
-	'src':'%d.%d.%d.%d' % ip[9:13],
-	'dst':'%d.%d.%d.%d' % ip[13:]}
+	'flag':(ip[4] >> 13),    # flags 3bits
+	'offset':(ip[4] & 0x0001111111111111),  # offset 13bits
+	'ttl':ip[5],
+	'protocol':ip[6],
+	'checksum':ip[7],
+	'src':'%d.%d.%d.%d' % ip[8:12],
+	'dst':'%d.%d.%d.%d' % ip[12:]}
 
 def dumpcode(buf):
 	print("%7s"% "offset ", end='')
@@ -67,23 +71,28 @@ def sniffing(nic):
 			sniffe_sock.setsockopt(socket.IPPROTO_IP,socket.IP_HDRINCL,1)
 			sniffe_sock.ioctl(socket.SIO_RCVALL,socket.RCVALL_ON)
 
-		data, _ = sniffe_sock.recvfrom(65535)
+		while(1) :
+            data, _ = sniffe_sock.recvfrom(65535)
 
-		ethernet_header = make_ethernet_header(data[:ETH_SIZE])
-		print("Ethernet Header")
-		for item in ethernet_header.items():
-			print('[{0}] : [{1}]'.format(item[0], item[1]))
+		    ethernet_header = make_ethernet_header(data[:ETH_SIZE])
+		    if ethernet_header == 0 :   # not IP packet
+                pass
+            else :      # IP packet
+                print("Ethernet Header")
+		        for item in ethernet_header.items():
+			        print('[{0}] : [{1}]'.format(item[0], item[1]))
 
-		ip_size = int(data[ETH_SIZE]) - 40
-		ip_header = make_ip_header(data[ETH_SIZE:])
-		for item in ethernet_header.items():
-			print('[{0}] : [{1}]'.format(item[0], item[1]))
+		        ip_size = int(data[ETH_SIZE] >> 4) * 4      # HL * 4 (byte)
+		        ip_header = make_ip_header(data[ETH_SIZE:ETH_SIZE+ip_size])
+                print("IP Header")
+		        for item in ethernet_header.items():
+			        print('[{0}] : [{1}]'.format(item[0], item[1]))
 
-		print("Raw Data")
-		dumpcode(data)
+		    print("Raw Data")
+		    dumpcode(data)
 
-		if os.name == 'nt':
-			sniffe_sock.ioctl(socket.SIO_RCVALL,socket.RCVALL_OFF)
+		    if os.name == 'nt':
+			    sniffe_sock.ioctl(socket.SIO_RCVALL,socket.RCVALL_OFF)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='This is a simpe packet sniffer')
