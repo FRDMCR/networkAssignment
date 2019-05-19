@@ -27,6 +27,7 @@ def make_ip_header(destination) :
     ip_header['src'][0],ip_header['src'][1],ip_header['src'][2],ip_header['src'][3],
     ip_header['dst'][0],ip_header['dst'][1],ip_header['dst'][2],ip_header['dst'][3])
 
+    return ip_raw
 def make_icmp_header() :
     icmp_header = { 'type' : 8,
     'code' : 0,
@@ -43,10 +44,12 @@ def make_icmp_header() :
     icmp_header['sequence_number'],
     icmp_header['data'].encode())
 
+    return icmp_raw
+
 def echo_request(des_ip) :
 
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW) as request_sock :
-        request_sock.bind(('', 0))
+        request_sock.bind(('', 8888))
 
         try :   # domain to ip address
             des_ip = socket.gethostbyname(des_ip)
@@ -54,6 +57,8 @@ def echo_request(des_ip) :
         except socket.gaierror :
             print("Incorrect domain name")
     
+        request_sock.sendall(make_ip_header, (des_ip, 8888))
+        request_sock.sendall(make_icmp_header, (des_ip, 8888))
 
 
 
@@ -62,5 +67,5 @@ if __name__ == "__main__":
     parser.add_argument('-d', type=str, required = True, help = 'destination IP or Domain')
     args = parser.parse_args()
 
-    echo_request(args.i)
+    echo_request(args.d)
 
