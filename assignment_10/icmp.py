@@ -12,7 +12,7 @@ def make_ip_header(destination) :
 	'ttl': 128,
 	'protocol': 1,
 	'checksum': 0,
-	'src': list(map(int, socket.gethostbyname(socket.gethostname().split('.')))),
+	'src': list(map(int, socket.gethostbyname(socket.gethostname()).split('.'))),
 	'dst': list(map(int, destination.split('.'))) }
 
     ip_raw = struct.pack('!BBHHHBBH4B4B',
@@ -28,6 +28,7 @@ def make_ip_header(destination) :
     ip_header['dst'][0],ip_header['dst'][1],ip_header['dst'][2],ip_header['dst'][3])
 
     return ip_raw
+
 def make_icmp_header() :
     icmp_header = { 'type' : 8,
     'code' : 0,
@@ -57,8 +58,8 @@ def echo_request(des_ip) :
         except socket.gaierror :
             print("Incorrect domain name")
     
-        request_sock.sendall(make_ip_header, (des_ip, 8888))
-        request_sock.sendall(make_icmp_header, (des_ip, 8888))
+        request_sock.sendto(make_ip_header(des_ip), (des_ip, 8888))
+        request_sock.sendto(make_icmp_header(), (des_ip, 8888))
 
 
 
