@@ -4,16 +4,20 @@ import struct
 
 
 def make_ip_header(destination) :
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s :    # get my ip address
+        s.connect(('8.8.8.8', 1))
+        src_ip = s.getsockname()[0]
+
     ip_header = {'version': 4,
    'header_length': 5,
    'tos': 0,
    'total_length':30,
    'id': 0,
    'flag/offset': 0,
-   'ttl': 128,
+   'ttl': 64,
    'protocol': 1,
    'checksum': 0,
-   'src': list(map(int, socket.gethostbyname(socket.gethostname()).split('.'))),
+   'src': list(map(int, src_ip.split('.'))),
    'dst': list(map(int, destination.split('.'))) }
 
     ip_raw = struct.pack('!BBHHHBBH4B4B',
@@ -32,8 +36,9 @@ def make_ip_header(destination) :
     for x in struct.unpack('!10H', ip_raw) :
         checksum += x
 
-    checksum = (checksum & 0xffff) + (checksum >> 16)
-    checksum = ~(checksum)
+        if checksum >  0xffff :
+            checksum = (checksum & 0xffff) + (checksum >> 16)
+
 
     checksum = ~checksum & 0xFFFF
 
@@ -62,8 +67,8 @@ def make_icmp_header() :
     for x in struct.unpack('!5H', icmp_raw) :
         checksum += x
 
-    checksum = (checksum & 0xffff) + (checksum >> 16)
-    checksum = ~(checksum)
+        if checksum >  0xffff :
+            checksum = (checksum & 0xffff) + (checksum >> 16)
 
     checksum = ~checksum & 0xFFFF
 
@@ -75,7 +80,7 @@ def make_icmp_header() :
 def echo_request(des_ip) :
 
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW) as request_sock :
-        request_sock.bind(('', 8888))
+        request_sock.bind(('', 0))
 
         try :   # domain to ip address
             des_ip = socket.gethostbyname(des_ip)
@@ -83,7 +88,7 @@ def echo_request(des_ip) :
         except socket.gaierror :
             print("Incorrect domain name")
     
-        request_sock.sendto(make_ip_header(des_ip) + make_icmp_header(), (des_ip, 8888))
+        request_sock.sendto(make_ip_header(des_ip) + make_icmp_header(), (des_ip, 0))
 
 
 if __name__ == "__main__":
