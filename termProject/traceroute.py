@@ -37,9 +37,9 @@ def traceroute (dst_addr, proto, maximum_hop, timeout) :
         for hop_cnt in range(1, maximum_hop+1) :
             ip_header.set_ttl(hop_cnt)
             if proto == socket.IPPROTO_ICMP :
-                echo_raw = ip_header.make_ip_field + icmp_raw
+                echo_raw = ip_header.make_ip_field() + icmp_raw
             elif proto == socket.IPPROTO_UDP :
-                echo_raw = ip_header.make_ip_field + udp_raw
+                echo_raw = ip_header.make_ip_field() + udp_raw
 
             #for j in range(3) :
             echo_sock.sendto(echo_raw, (dst_ip , DST_PORT))
@@ -55,11 +55,11 @@ if __name__ == "__main__":
     proto_group.add_argument('-I', nargs = '?', const = socket.IPPROTO_ICMP, default = socket.IPPROTO_ICMP, help = 'using ICMP')
     proto_group.add_argument('-U', nargs = '?', const = socket.IPPROTO_UDP, help = 'using UDP')
 
-    parser.add_argument('-h', required = False, default = 30, help = 'maximum hops')
+    parser.add_argument('-H', required = False, default = 30, help = 'maximum hops')
     parser.add_argument('-t', required = False, default = 5 ,help = 'time out')
     args = parser.parse_args()
 
     if args.U :
-        traceroute(args.d, args.U, args.h, args.t)
+        traceroute(args.d, args.U, args.H, args.t)
     else :
-        traceroute(args.d, args.I, args.h, args.t)
+        traceroute(args.d, args.I, args.H, args.t)

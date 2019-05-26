@@ -1,5 +1,14 @@
-dst_host = '123'
-dst_ip = '123'
-hop = 23
-length = 14
-print("%d" % 2 + f"traceroute to {dst_host} ({dst_ip}), {hop} hops max, {length+13} byte packets")
+import argparse
+import socket
+import struct
+import packet
+import sys
+
+ETH_LENGTH = 14
+SRC_PORT = 10000
+DST_PORT = 13000
+DATA = 'cheeseburger'
+
+udp_header = packet.Udp(SRC_PORT, DST_PORT, DATA)
+print(udp_header.length)
+print(udp_header.make_udp_field()[1])

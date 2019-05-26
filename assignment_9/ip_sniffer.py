@@ -68,7 +68,7 @@ def sniffing(nic):
 		sniffe_sock.bind((nic, 0))
 
 		#if os.name == 'nt':
-		#	sniffe_sock.setsockopt(socket.IPPROTO_IP,socket.IP_HDRINCL,1)
+		#	sniffe_sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 		#	sniffe_sock.ioctl(socket.SIO_RCVALL,socket.RCVALL_ON)
 
 		while(1) :

@@ -20,21 +20,21 @@ def checksum (msg) :
 # make IP packet field and return raw data
 class Ip() :
     def __init__(self, protocol, dst, ttl) :
-        self.version = 4,
-        self.header_length = 5,
-        self.tos = 0,
-        self.total_length = 0,
-        self.id = 0,
-        self.flag_offset = 0,
-        self.ttl = ttl,
-        self.protocol = protocol,
-        self.checksum = 0,
-        self.src = 0,
+        self.version = 4
+        self.header_length = 5
+        self.tos = 0
+        self.total_length = 0
+        self.id = 0
+        self.flag_offset = 0
+        self.ttl = ttl
+        self.protocol = protocol
+        self.checksum = 0
+        self.src = 0
         self.dst = list(map(int, dst.split('.')))
 
 
     def make_ip_field(self) :
-        raw = struct.pack('!BBHHHBBHIB',
+        raw = struct.pack('!BBHHHBBHI4B',
         int('0x' + str(self.version) + str(self.header_length), 16),
         self.tos,
         self.total_length,
@@ -50,15 +50,15 @@ class Ip() :
 
     def set_ttl(self, ttl) :
         self.ttl = ttl
-        
+
 # make ICMP packet field and return raw data
 class Icmp() :
     def __init__(self, data) :
-        self.type = 8,
-        self.code = 0,
-        self.checksum = 0,
-        self.id = 0,
-        self.sequence_num = 0,
+        self.type = 8
+        self.code = 0
+        self.checksum = 0
+        self.id = 0
+        self.sequence_num = 0
         self.data = data
 
 
@@ -76,10 +76,10 @@ class Icmp() :
 # make UDP packet field and return raw data
 class Udp() :
     def __init__(self, src_port, dst_port, data) :
-        self.src_port = int(src_port),
-        self.dst_port = int(dst_port),
-        self.length = 8 + len(data),
-        self.checksum = 0,
+        self.src_port = int(src_port)
+        self.dst_port = int(dst_port)
+        self.length = 8 + len(data)
+        self.checksum = 0
         self.data = data
 
     def make_udp_field(self) :
@@ -90,4 +90,4 @@ class Udp() :
         self.checksum,
         self.data.encode())
 
-        return raw[:3] + checksum(raw) + raw[4:]
+        return raw[:6] + checksum(raw) + raw[8:]
