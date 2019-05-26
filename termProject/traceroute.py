@@ -56,22 +56,30 @@ def traceroute (dst_addr, proto, maximum_hop, timeout) :
                     res_data, hop_addr = response_sock.recvfrom(65535)
                     end = time.time()
 
-                    rtt[j] = (start - end) * 1000   # ms
-                    hop_name = socket.gethostbyaddr(hop_addr)[0]
-                    hop_ip  = hop_addr
+                    rtt.insert(j, str((end - start) * 1000)[0:5] + 'ms')   # ms
+                    hop_name = socket.gethostbyaddr(hop_addr[0])[0]
+                    hop_ip  = hop_addr[0]
 
                 except socket.timeout :     # timeout
-                    rtt[j] = '*'
+                    rtt.insert(j, '*')
                     continue
                 
                 except socket.gaierror :
                     limit -= 1
                     continue
 
+                except socket.herror :
+                    hop_name = hop_addr[0]
+                    hop_ip  = hop_addr[0]
+                    continue
+
             if limit == 0 :
                 print("%2d  " % hop_cnt + "* * *")
             else :
-                print("%2d  " % hop_cnt + f"{hop_name}  ({hop_ip})  "+"%4.3f ms  %4.3f ms  %4.3f ms" % (rtt[0], rtt[1], rtt[2]))
+                print("%2d  " % hop_cnt + f"{hop_name}  ({hop_ip})  {rtt[0]}  {rtt[1]}  {rtt[2]}")
+
+            if hop_ip == dst_ip :   #   success
+                break
 
         response_sock.close()
 
