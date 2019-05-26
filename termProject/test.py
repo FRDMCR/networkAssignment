@@ -1,14 +1,10 @@
-import argparse
-import socket
-import struct
-import packet
-import sys
+import time
 
-ETH_LENGTH = 14
-SRC_PORT = 10000
-DST_PORT = 13000
-DATA = 'cheeseburger'
+tu = 1,2
 
-udp_header = packet.Udp(SRC_PORT, DST_PORT, DATA)
-print(udp_header.length)
-print(udp_header.make_udp_field()[1])
+start = time.time()
+end = time.time()
+difference = end - start
+
+print(difference)
+print(tu[0])

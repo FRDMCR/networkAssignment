@@ -3,6 +3,7 @@ import socket
 import struct
 import packet
 import sys
+import time
 
 ETH_LENGTH = 14
 SRC_PORT = 10000
@@ -20,32 +21,59 @@ def traceroute (dst_addr, proto, maximum_hop, timeout) :
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW) as echo_sock :
         echo_sock.bind(('', SRC_PORT))
         
+        response_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, proto)
+        response_sock.bind(('', SRC_PORT))
+
         ip_header = packet.Ip(proto, dst_ip, maximum_hop)
         ip_raw = ip_header.make_ip_field()
-
-        if proto == socket.IPPROTO_ICMP :   # make icmp raw packet
+        if proto == socket.IPPROTO_ICMP :   # make icmp raw packet for length
             icmp_header = packet.Icmp(DATA)
             icmp_raw = icmp_header.make_icmp_field()
             echo_raw = ip_raw + icmp_raw
-        elif proto == socket.IPPROTO_UDP :      # make udp raw packet
+        elif proto == socket.IPPROTO_UDP :      # make udp raw packet for length
             udp_header = packet.Udp(SRC_PORT, DST_PORT, DATA)
             udp_raw = udp_header.make_udp_field()
             echo_raw = ip_raw + udp_raw
 
         print(f"traceroute to {dst_host} ({dst_ip}), {maximum_hop} hops max, {len(echo_raw)+ETH_LENGTH} byte packets")
         
-        for hop_cnt in range(1, maximum_hop+1) :
+        response_sock.settimeout(float(timeout))    # set timeout
+    
+        for hop_cnt in range(1, maximum_hop+1) :   # increase the number of hops(ttl)
             ip_header.set_ttl(hop_cnt)
             if proto == socket.IPPROTO_ICMP :
                 echo_raw = ip_header.make_ip_field() + icmp_raw
             elif proto == socket.IPPROTO_UDP :
                 echo_raw = ip_header.make_ip_field() + udp_raw
 
-            #for j in range(3) :
-            echo_sock.sendto(echo_raw, (dst_ip , DST_PORT))
+            rtt = []    #  round trip time
+            limit = 3   #  limited to find route or host
+            for j in range(3) :
+                echo_sock.sendto(echo_raw, (dst_ip , DST_PORT))
 
-        #print("%2d  " % hop_cnt + f"{hop_name}  ({hop_ip})  {rtt[0]}  {rtt[1]}  {rtt[2]}")
+                try :
+                    start = time.time()
+                    res_data, hop_addr = response_sock.recvfrom(65535)
+                    end = time.time()
 
+                    rtt[j] = (start - end) * 1000   # ms
+                    hop_name = socket.gethostbyaddr(hop_addr)[0]
+                    hop_ip  = hop_addr
+
+                except socket.timeout :     # timeout
+                    rtt[j] = '*'
+                    continue
+                
+                except socket.gaierror :
+                    limit -= 1
+                    continue
+
+            if limit == 0 :
+                print("%2d  " % hop_cnt + "* * *")
+            else :
+                print("%2d  " % hop_cnt + f"{hop_name}  ({hop_ip})  "+"%4.3f ms  %4.3f ms  %4.3f ms" % (rtt[0], rtt[1], rtt[2]))
+
+        response_sock.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='traceroute -d [-I or -U] [-h] [-t]')
