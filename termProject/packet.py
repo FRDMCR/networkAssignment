@@ -48,6 +48,9 @@ class Ip() :
 
         return raw
 
+    def set_ttl(self, ttl) :
+        self.ttl = ttl
+        
 # make ICMP packet field and return raw data
 class Icmp() :
     def __init__(self, data) :
