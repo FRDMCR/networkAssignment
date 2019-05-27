@@ -93,8 +93,8 @@ if __name__ == "__main__":
     proto_group.add_argument('-I', nargs = '?', const = socket.IPPROTO_ICMP, default = socket.IPPROTO_ICMP, help = 'using ICMP')
     proto_group.add_argument('-U', nargs = '?', const = socket.IPPROTO_UDP, help = 'using UDP')
 
-    parser.add_argument('-H', required = False, default = 30, help = 'maximum hops')
-    parser.add_argument('-t', required = False, default = 5 ,help = 'time out')
+    parser.add_argument('-H', type=int, required = False, default = 30, help = 'maximum hops')
+    parser.add_argument('-t', type=int, required = False, default = 5 ,help = 'time out')
     args = parser.parse_args()
 
     if args.U :
