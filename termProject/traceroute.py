@@ -11,7 +11,7 @@ DST_PORT = 13000
 DATA = 'cheeseburger'
 
 def traceroute (dst_addr, proto, maximum_hop, timeout) :
-    try :   # domain to ip address
+    try :                                               # domain to ip address
         dst_ip = socket.gethostbyname(dst_addr)
         dst_host = socket.gethostbyaddr(dst_addr)[0]
     except socket.gaierror :
@@ -21,33 +21,33 @@ def traceroute (dst_addr, proto, maximum_hop, timeout) :
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW) as echo_sock :
         echo_sock.bind(('', SRC_PORT))
         
-        response_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, proto)
+        response_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
         response_sock.bind(('', SRC_PORT))
 
         ip_header = packet.Ip(proto, dst_ip, maximum_hop)
         ip_raw = ip_header.make_ip_field()
-        if proto == socket.IPPROTO_ICMP :   # make icmp raw packet for length
+        if proto == socket.IPPROTO_ICMP :              # make icmp raw packet for length
             icmp_header = packet.Icmp(DATA)
             icmp_raw = icmp_header.make_icmp_field()
             echo_raw = ip_raw + icmp_raw
-        elif proto == socket.IPPROTO_UDP :      # make udp raw packet for length
+        elif proto == socket.IPPROTO_UDP :             # make udp raw packet for length
             udp_header = packet.Udp(SRC_PORT, DST_PORT, DATA)
             udp_raw = udp_header.make_udp_field()
             echo_raw = ip_raw + udp_raw
 
         print(f"traceroute to {dst_host} ({dst_ip}), {maximum_hop} hops max, {len(echo_raw)+ETH_LENGTH} byte packets")
         
-        response_sock.settimeout(float(timeout))    # set timeout
+        response_sock.settimeout(float(timeout))        # set timeout
     
-        for hop_cnt in range(1, maximum_hop+1) :   # increase the number of hops(ttl)
+        for hop_cnt in range(1, maximum_hop+1) :        # increase the number of hops(ttl)
             ip_header.set_ttl(hop_cnt)
             if proto == socket.IPPROTO_ICMP :
                 echo_raw = ip_header.make_ip_field() + icmp_raw
             elif proto == socket.IPPROTO_UDP :
                 echo_raw = ip_header.make_ip_field() + udp_raw
 
-            rtt = []    #  round trip time
-            limit = 3   #  limited to find route or host
+            rtt = []                                    #  round trip time
+            limit = 3                                   #  limited to find route or host
             for j in range(3) :
                 echo_sock.sendto(echo_raw, (dst_ip , DST_PORT))
 
@@ -60,7 +60,7 @@ def traceroute (dst_addr, proto, maximum_hop, timeout) :
                     hop_name = socket.gethostbyaddr(hop_addr[0])[0]
                     hop_ip  = hop_addr[0]
 
-                except socket.timeout :     # timeout
+                except socket.timeout :                # timeout
                     rtt.insert(j, '*')
                     limit -= 1
                     continue
