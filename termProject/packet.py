@@ -1,19 +1,21 @@
 import socket
 import struct
+from functools import reduce
+import random
 
 #calculate icmp & udp packets's checksum
-def checksum (msg) :
-    if len(msg) % 2 != 0 :  # if msg's byte length is odd number
-        msg = msg + b'0'  # make to even number
+def checksum (header) :
+    size = len(header)
+    if (size % 2) == 1:
+        header += b'\x00'
+        size += 1
 
-    checksum = 0
-    for x in struct.unpack('!' + str(len(msg)//2) + 'H', msg) :  # slice to 2 byte
-        checksum += x
-
-        if checksum > 0xffff :  
-            checksum = (checksum & 0xffff) + (checksum >> 16)
-
-    checksum = ~checksum & 0xffff
+    size = size // 2
+    header = struct.unpack('!' + str(size) + 'H', header)
+    sum = reduce(lambda x, y : x+y, header)
+    checksum = (sum >> 16) + (sum & 0xffff)
+    checksum += checksum >> 16
+    checksum = (checksum ^ 0xffff)
 
     return struct.pack('!H', checksum)
     
@@ -24,12 +26,12 @@ class Ip() :
         self.header_length = 5
         self.tos = 0
         self.total_length = 0
-        self.id = 0
+        self.id = random.randrange(0,65535)
         self.flag_offset = 0
         self.ttl = ttl
         self.protocol = protocol
         self.checksum = 0
-        self.src = 0
+        self.src = [0]
         self.dst = list(map(int, dst.split('.')))
 
 
@@ -43,7 +45,7 @@ class Ip() :
         self.ttl,
         self.protocol,
         self.checksum,
-        self.src,
+        self.src[0],
         self.dst[0], self.dst[1], self.dst[2], self.dst[3])
 
         return raw
@@ -51,13 +53,16 @@ class Ip() :
     def set_ttl(self, ttl) :
         self.ttl = ttl
 
+    def get_id(self) :
+        return self.id
+
 # make ICMP packet field and return raw data
 class Icmp() :
     def __init__(self, data) :
         self.type = 8
         self.code = 0
         self.checksum = 0
-        self.id = 0
+        self.id = random.randrange(0,65535)
         self.sequence_num = 0
         self.data = data
 
@@ -73,6 +78,12 @@ class Icmp() :
 
         return raw[:2] + checksum(raw) + raw[4:]
 
+    def set_seq(self, seq) :
+        self.sequence_num = seq
+
+    def get_id(self) :
+        return self.id
+        
 # make UDP packet field and return raw data
 class Udp() :
     def __init__(self, src_port, dst_port, data) :
