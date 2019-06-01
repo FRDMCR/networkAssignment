@@ -4,7 +4,7 @@ import struct
 import packet
 import sys
 import time
-import sniffer
+import icmp_sniffer
 
 ETH_SIZE = 14
 IP_SIZE = 20            # exclude option size 
@@ -83,15 +83,15 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                     hop_ip  = res_addr[0]
                     pass
 
-                sniff = sniffer.Sniffing(res_data)
+                sniff_icmp = icmp_sniffer.Sniffing(res_data)
                 
                 # TIME_EXCEEDED #
-                if sniff.get_icmp_msg_type() == TIME_EXCEEDED and sniff.get_icmp_msg_code() == 0 :
+                if sniff_icmp.get_icmp_type() == TIME_EXCEEDED and sniff_icmp.get_icmp_code() == 0 :
                     continue
 
                 # ECHO_REPLY #
-                elif sniff.get_icmp_msg_type() == ECHO_REPLY and sniff.get_icmp_msg_code() == 0 :
-                    if sniff.get_icmp_id() ==  icmp_raw.get_id() and sniff.get_icmp_data() == DATA * data_size :
+                elif sniff_icmp.get_icmp_type() == ECHO_REPLY and sniff_icmp.get_icmp_code() == 0 :
+                    if sniff_icmp.get_return_icmp_id() ==  icmp_raw.get_id() and sniff_icmp.get_return_icmp_data() == DATA * data_size :
                         success = 1
                         continue
                     else :                          # not my packet
@@ -100,8 +100,8 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                         continue
 
                 # DESTINATION_UNREACHABLE - Port unreachable #
-                elif sniff.get_icmp_msg_type() == DESTINATION_UNREACHABLE and sniff.get_icmp_msg_code() == 0 :
-                    if sniff.get_ip_id() == ip_raw.get_id() and sniff.get_udp_dst_prot == dst_port :
+                elif sniff_icmp.get_icmp_type() == DESTINATION_UNREACHABLE and sniff_icmp.get_icmp_code() == 0 :
+                    if sniff_icmp.get_return_ip_id() == ip_raw.get_id() and sniff_icmp.get_udp_dst_prot == dst_port :
                         success = 1
                         continue
                     else :                          # not my packet
