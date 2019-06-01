@@ -24,6 +24,10 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
         print("Incorrect address")
         sys.exit()
 
+    except socket.herror :                              # unknown host
+        dst_ip = socket.gethostbyname(dst_addr)
+        dst_host = dst_ip
+
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW) as echo_sock :
         echo_sock.bind(('', SRC_PORT))
         
@@ -100,7 +104,7 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                     else :
                         raw_data =  icmp_raw.get_data()
                     
-                    if sniff_icmp.get_icmp_id() ==  raw_data :
+                    if sniff_icmp.get_icmp_id() == icmp_raw.get_id()  and sniff_icmp.get_icmp_data() == raw_data :
                         success = 1
                         continue
                     else :                          # not my packet
