@@ -65,10 +65,16 @@ class Sniffing() :
             pass
 
     def get_icmp_type(self) :
-        return self.return_icmp_header['type']
+        return self.icmp_header['type']
 
     def get_icmp_code(self) :
-        return self.return_icmp_header['code']
+        return self.icmp_header['code']
+
+    def get_icmp_id(self) :
+        return self.icmp_header['id']
+
+    def get_icmp_data(self) :
+        return self.icmp_header['data'][0].decode()
 
     def get_return_ip_id(self) :
         return int(self.return_ip_header['id'])
@@ -77,10 +83,7 @@ class Sniffing() :
         return self.return_ip_header['dst']
 
     def get_return_icmp_id(self) :
-        return int(self.icmp_header['id'])
-
-    def get_return_icmp_data(self) :
-        return self.icmp_header['data']
+        return int(self.return_icmp_header['id'])
 
     def get_udp_dst_prot(self) :
         return self.return_udp_header['dst_port']

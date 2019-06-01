@@ -1,6 +1,5 @@
 import argparse
 import socket
-import struct
 import packet
 import sys
 import time
@@ -87,11 +86,21 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                 
                 # TIME_EXCEEDED #
                 if sniff_icmp.get_icmp_type() == TIME_EXCEEDED and sniff_icmp.get_icmp_code() == 0 :
-                    continue
+                    if sniff_icmp.get_return_ip_id() == ip_raw.get_id() :
+                        continue
+                    else :                          # not my packet
+                        rtt.insert(j, '*')
+                        limit -= 1
+                        continue
 
                 # ECHO_REPLY #
                 elif sniff_icmp.get_icmp_type() == ECHO_REPLY and sniff_icmp.get_icmp_code() == 0 :
-                    if sniff_icmp.get_return_icmp_id() ==  icmp_raw.get_id() and sniff_icmp.get_return_icmp_data() == DATA * data_size :
+                    if len(icmp_raw.get_data()) > 64 :      # because reply packet's maximum data length is 64 bytes
+                        raw_data =  icmp_raw.get_data()[:64]
+                    else :
+                        raw_data =  icmp_raw.get_data()
+                    
+                    if sniff_icmp.get_icmp_id() ==  raw_data :
                         success = 1
                         continue
                     else :                          # not my packet

@@ -1,8 +1,7 @@
 import time
 import struct
-import sniffer
 import socket
 
-test = struct.unpack('!B', b'\01')
-if int(test[0]) == socket.IPPROTO_ICMP :
+test = struct.unpack('!s', b'a')
+if test[0].decode() == 'a' :
     print('OK')

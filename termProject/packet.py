@@ -83,6 +83,9 @@ class Icmp() :
 
     def get_id(self) :
         return self.id
+
+    def get_data(self) :
+        return self.data
         
 # make UDP packet field and return raw data
 class Udp() :
