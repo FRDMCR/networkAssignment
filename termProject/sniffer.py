@@ -1,10 +1,10 @@
-import os
 import socket
-import argparse
 import struct
-import packet
 
-ETH_SIZE = 14
+ICMP_MSG_SIGE = 4
+IP_SIZE = 20            # exclude option size 
+ICMP_SIZE = 8           # exclude data size
+UDP_SIZE = 8            # exclude data size
 
 def parse_ip_header(data) :
     headerlist = struct.unpack('!BBHHHBBH4B4B',data)
@@ -20,8 +20,14 @@ def parse_ip_header(data) :
     'src' : '%d.%d.%d.%d' % headerlist[8:12],
     'dst' : '%d.%d.%d.%d' % headerlist[12:]}
 
+def parse_icmp_message(data) :
+    headerlist = struct.unpack('!BBH', data)
+    return {'type' : headerlist[0],
+    'code' : headerlist[1],
+    'checksum' : headerlist[2]}
+
 def parse_icmp_header(data) :
-    headerlist = struct.unpack('!BBHHH', str(len(data)-8) + 's', data)
+    headerlist = struct.unpack('!BBHHH' + str(len(data) - ICMP_SIZE) + 's', data)
     return {'type' : headerlist[0],
     'code' : headerlist[1],
     'checksum' : headerlist[2],
@@ -29,27 +35,44 @@ def parse_icmp_header(data) :
     'sequence_num' : headerlist[4],
     'data' : headerlist[5:]}    
 
+def parse_udp_header(data) :
+    headerlist = struct.unpack('!4H' + str(len(data) - UDP_SIZE) + 's', data)
+    return {'src_port' : headerlist[0],
+    'dst_port' : headerlist[1],
+    'length' : headerlist[2],
+    'checksum' : headerlist[3],
+    'data' : headerlist[4:]}
+
 class Sniffing() :
     
-    def init(self, data) :
-        self.ip_size = int(data[ETH_SIZE] >> 4) * 5                   # HL * 5 (byte)
-        self.ip_header = parse_ip_header(data[ETH_SIZE : ETH_SIZE+20])  # exclude option
-        self.icmp_header = parse_icmp_header(data[ETH_SIZE+self.ip_size :])
+    def __init__(self, data) :
+        self.ip_size = int(data[0] >> 4) * 5                             # HL * 5 (byte)
+
+        self.ip_header = parse_ip_header(data[0 : IP_SIZE])              # exclude option
+        self.icmp_msg = parse_icmp_message(data[self.ip_size : self.ip_size + ICMP_MSG_SIGE])
+        self.icmp_ip_header = parse_ip_header(data[self.ip_size + ICMP_MSG_SIGE : self.ip_size + ICMP_MSG_SIGE + IP_SIZE])   # exclude option
+        if int(self.icmp_ip_header['protocol']) == socket.IPPROTO_ICMP :
+            self.icmp_header = parse_icmp_header(data[self.ip_size + ICMP_MSG_SIGE + self.ip_size : ])
+        elif int(self.icmp_ip_header['protocol']) == socket.IPPROTO_UDP :
+            self.udp_header = parse_udp_header(data[self.ip_size + ICMP_MSG_SIGE + self.ip_size : ])
 
     def get_ip_id(self) :
-        return int(self.ip_header['id'])
+        return int(self.icmp_ip_header['id'])
 
     def get_ip_dst(self) :
-        return self.ip_header['dst']
+        return self.icmp_ip_header['dst']
 
     def get_icmp_id(self) :
         return int(self.icmp_header['id'])
 
-    def get_icmp_type(self) :
-        return int(self.icmp_header['type'])
+    def get_icmp_msg_type(self) :
+        return int(self.icmp_msg['type'])
 
-    def get_icmp_code(self) :
+    def get_icmp_msg_code(self) :
         return int(self.icmp_header['code'])
 
     def get_icmp_data(self) :
         return self.icmp_header['data']
+
+    def get_udp_dst_prot(self) :
+        return self.udp_header['dst_port']

@@ -8,7 +8,8 @@ import sniffer
 
 ETH_SIZE = 14
 IP_SIZE = 20            # exclude option size 
-ICMP_SIZE = 8           # exclude data size 
+ICMP_SIZE = 8           # exclude data size
+UDP_SIZE = 8            # exclude data size
 SRC_PORT = 10000
 DST_PORT = 53
 DATA = 'a'
@@ -30,9 +31,12 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
         sniff_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
         sniff_sock.bind(('', SRC_PORT))
 
-        sniff_sock.settimeout(float(timeout))        # set timeout
+        sniff_sock.settimeout(float(timeout))           # set timeout
 
-        data_size = packet_size - IP_SIZE - ICMP_SIZE   # in order to make data
+        if proto == socket.IPPROTO_ICMP :               # in order to make data
+            data_size = packet_size - IP_SIZE - ICMP_SIZE
+        elif proto == socket.IPPROTO_UDP :
+            data_size = packet_size - IP_SIZE - UDP_SIZE
 
         ip_raw = packet.Ip(proto, dst_ip, maximum_hop)
         icmp_raw = packet.Icmp(DATA * data_size)
@@ -49,7 +53,7 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
             elif proto == socket.IPPROTO_UDP :
                 echo_raw = ip_raw.make_ip_field() + udp_raw.make_udp_field()
 
-            rtt = ['*', '*', '*']                       #  round trip time
+            rtt = []                       #  round trip time
             limit = 3                                   #  limited to find route or host
             for j in range(3) :
                 echo_sock.sendto(echo_raw, (dst_ip , dst_port))
@@ -72,22 +76,22 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                 except socket.gaierror :               # not found domain
                     hop_name = '_gateway'
                     hop_ip  = res_addr[0]
-                    continue
+                    pass
 
                 except socket.herror :                 # not found domain
                     hop_name = '_gateway'
                     hop_ip  = res_addr[0]
-                    continue
+                    pass
 
-                sniff_icmp = sniffer.Sniffing(res_data)
+                sniff = sniffer.Sniffing(res_data)
                 
                 # TIME_EXCEEDED #
-                if sniff_icmp.get_icmp_type() == TIME_EXCEEDED and sniff_icmp.get_icmp_code() == 0 :
+                if sniff.get_icmp_msg_type() == TIME_EXCEEDED and sniff.get_icmp_msg_code() == 0 :
                     continue
 
                 # ECHO_REPLY #
-                elif sniff_icmp.get_icmp_type() == ECHO_REPLY and sniff_icmp.get_icmp_code() == 0 :
-                    if sniff_icmp.get_icmp_id() ==  icmp_raw.get_id() and sniff_icmp.get_icmp_data() == DATA * data_size :
+                elif sniff.get_icmp_msg_type() == ECHO_REPLY and sniff.get_icmp_msg_code() == 0 :
+                    if sniff.get_icmp_id() ==  icmp_raw.get_id() and sniff.get_icmp_data() == DATA * data_size :
                         success = 1
                         continue
                     else :                          # not my packet
@@ -96,8 +100,8 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
                         continue
 
                 # DESTINATION_UNREACHABLE - Port unreachable #
-                elif sniff_icmp.get_icmp_type() == DESTINATION_UNREACHABLE and sniff_icmp.get_icmp_code() == 0 :
-                    if sniff_icmp.get_ip_id() == ip_raw.get_id() and res_addr[1] == dst_port :
+                elif sniff.get_icmp_msg_type() == DESTINATION_UNREACHABLE and sniff.get_icmp_msg_code() == 0 :
+                    if sniff.get_ip_id() == ip_raw.get_id() and sniff.get_udp_dst_prot == dst_port :
                         success = 1
                         continue
                     else :                          # not my packet
@@ -117,8 +121,8 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='traceroute address(destination IP or Domain) size [-I or -U] [-c] [-t] [-p]')
-    parser.add_argument('address', type=str, required = True, help = 'destination IP or Domain')
-    parser.add_argument('size', type=int, required = True, help = 'packet size excluding ip')
+    parser.add_argument('address', type=str, help = 'destination IP or Domain')
+    parser.add_argument('size', type=int, help = 'packet size excluding ip')
 
     proto_group = parser.add_mutually_exclusive_group()
     proto_group.add_argument('-I', nargs = '?', const = socket.IPPROTO_ICMP, default = socket.IPPROTO_ICMP, help = 'using ICMP')
