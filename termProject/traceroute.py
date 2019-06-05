@@ -4,13 +4,14 @@ import packet
 import sys
 import time
 import icmp_sniffer
+import random
 
 ETH_SIZE = 14
 IP_SIZE = 20            # exclude option size 
 ICMP_SIZE = 8           # exclude data size
 UDP_SIZE = 8            # exclude data size
 SRC_PORT = 10000
-DST_PORT = 53
+DST_PORT = random.randrange(0, 65535)
 DATA = 'a'
 TIME_EXCEEDED = 11   # Type
 ECHO_REPLY = 0
@@ -49,14 +50,16 @@ def traceroute (dst_addr, packet_size , proto, maximum_hop, timeout, dst_port) :
     
         success = 0                                     # If the destination is found, change it to 1
         for hop_cnt in range(1, maximum_hop+1) :        # increase the number of hops(ttl) and seqeunce number
-            ip_raw.set_ttl(hop_cnt)
+            ip_raw.set_ttl(hop_cnt)                     
             if proto == socket.IPPROTO_ICMP :
-                icmp_raw.set_seq(hop_cnt)
+                icmp_raw.set_seq(hop_cnt)               # sequence + 1
                 echo_raw = ip_raw.make_ip_field() + icmp_raw.make_icmp_field()
             elif proto == socket.IPPROTO_UDP :
+                dst_port += 1                           # port + 1
+                udp_raw.set_port(dst_port)             
                 echo_raw = ip_raw.make_ip_field() + udp_raw.make_udp_field()
 
-            rtt = []                       #  round trip time
+            rtt = []                                    #  round trip time
             limit = 3                                   #  limited to find route or host
             for j in range(3) :
                 echo_sock.sendto(echo_raw, (dst_ip , dst_port))

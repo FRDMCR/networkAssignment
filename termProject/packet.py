@@ -104,4 +104,7 @@ class Udp() :
         self.checksum,
         self.data.encode())
 
-        return raw[:6] + checksum(raw) + raw[8:]
+        return raw
+
+    def set_port(self, port) :
+        self.dst_port = port
